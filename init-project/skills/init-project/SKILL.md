@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Project Initializer
 
-Bootstrap a new project that conforms to the [workflow contract](../../../docs/WORKFLOW_CONTRACT.md) (contract version 1). The output of this skill is a local scaffold plus a GitHub repository whose issues, labels, and milestones match exactly what `exec-tasks` expects to read.
+Bootstrap a new project that conforms to the [workflow contract](../../../docs/WORKFLOW_CONTRACT.md) (contract version 2). The output of this skill is a local scaffold plus a GitHub repository whose issues, labels, and milestones match exactly what `exec-tasks` expects to read.
 
 ## When to use
 
@@ -15,7 +15,7 @@ Bootstrap a new project that conforms to the [workflow contract](../../../docs/W
 
 ## Workflow Contract
 
-Every artifact this skill writes MUST conform to [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) (contract version 1). The load-bearing points:
+Every artifact this skill writes MUST conform to [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) (contract version 2). The load-bearing points:
 
 - **Issue body template** has exactly `## Summary`, `## Acceptance Criteria`, `## Priority`, `## Depends on` sections (in that order)
 - **Priority labels:** `P0`, `P1`, `P2`, `P3` (exactly one per issue)
@@ -511,7 +511,7 @@ Written at the start of Phase 1 (see above). Deleted on successful completion of
 
 ## Rules
 
-- **Contract conformance is mandatory.** Every issue body, label name, milestone name, and required path must match `docs/WORKFLOW_CONTRACT.md` v1 exactly. Do not improvise spellings or orderings.
+- **Contract conformance is mandatory.** Every issue body, label name, milestone name, and required path must match `docs/WORKFLOW_CONTRACT.md` v2 exactly. Do not improvise spellings or orderings.
 - **Never overwrite existing files.** The empty-ish guard (CLAUDE.md, docs/, .memory/, .github/workflows/claude.yml) is a hard stop. `README.md` is the single exception — if it already exists, leave it untouched.
 - **Always write the state marker first.** `.init-project-state.json` must exist before any other file in Phase 1 so a crash mid-scaffold is recoverable with `--resume`.
 - **Resume respects completed phases.** Never re-run a phase listed in `completed_phases`. Never re-interview; replay answers from the marker.
