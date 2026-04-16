@@ -15,7 +15,7 @@ Review the GitHub project board of the current repository, identify the highest-
 
 ## Workflow Contract
 
-This skill reads issues, labels, and milestones according to the shared workflow contract at [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) in the `claude-project-workflow` repo (contract version 1). Projects scaffolded by `init-project` conform to this contract automatically.
+This skill reads issues, labels, and milestones according to the shared workflow contract at [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) in the `claude-project-workflow` repo (contract version 2). Projects scaffolded by `init-project` conform to this contract automatically.
 
 **Key contract points this skill relies on:**
 - **Issue body template** has `## Summary`, `## Acceptance Criteria`, `## Priority`, `## Depends on` sections
@@ -63,15 +63,19 @@ Apply these rules in order (per the workflow contract):
 
 ### Step 3: Gather context for each task
 
-Before spawning an agent, prepare its context package by reading:
+For each selected issue, invoke the **`prepare-context` sub-skill** (in `exec-tasks/skills/prepare-context/SKILL.md`). It produces `.memory/plans/<issue_number>-context.md` containing:
 
-- The issue body (Summary, Acceptance Criteria, Priority, Depends on)
-- `CLAUDE.md` — project conventions, commands, workflow rules
-- `docs/PRD.md` — product requirements
-- `docs/glossary.md` — domain terminology
-- `docs/adr/` — all ADRs (agents must comply)
-- `.memory/plans/` — any existing specs relevant to the task
-- The current codebase files that the task will modify or depend on
+- Issue summary and linked-issue graph
+- Relevant ADR excerpts
+- Relevant PRD section(s)
+- Glossary terms used in the issue
+- Symbol grep results for key nouns
+- Recent merged PRs touching hinted files
+- Library documentation (best-effort WebFetch for third-party deps mentioned in the issue)
+
+The orchestrator runs `prepare-context` once per selected issue, in parallel with other issues' context preparation where safe. Each resulting context file is passed to the coding agent spawned in Step 4.
+
+Do not duplicate context-gathering work inline here — delegate to the sub-skill so every issue gets a consistent, structured package written to disk.
 
 ### Step 4: Spawn coding agents
 
@@ -79,17 +83,24 @@ For each selected task, spawn an Agent with:
 - `subagent_type: "expert-programmer"`
 - `isolation: "worktree"` (each agent works on an isolated copy)
 - A comprehensive prompt that includes:
-  1. **The task:** what to build, Summary + Acceptance Criteria from the issue
-  2. **Project rules:** key conventions from CLAUDE.md
-  3. **Architecture constraints:** relevant ADRs
-  4. **Terminology:** key glossary terms relevant to the task
-  5. **PRD spec:** the relevant PRD section content
-  6. **Existing code context:** which files to read, what already exists
-  7. **Testing requirements:** write unit tests, ensure the project's check command passes
-  8. **Branch naming:** `feature/{issue-number}-{short-description}` (or `fix/{issue-number}-...` for bugs based on the `type:` label)
-  9. **Commit message:** reference the issue number (e.g., "Implement seeded RNG system (#8)")
+  1. **The task:** issue number, issue title, and a pointer to `.memory/plans/<N>-context.md` (produced in Step 3) as the primary context input
+  2. **Required workflow for the coding agent** (the agent MUST follow this order):
+     1. Read `.memory/plans/<N>-context.md` end-to-end
+     2. Invoke the **`plan-task` sub-skill** to produce `.memory/plans/<N>-plan.md` before writing any implementation code
+     3. Implement the task, using the plan's file manifest as a commitment (update the plan first if the manifest needs to change)
+     4. Run the project's check command (from CLAUDE.md) until it passes
+     5. Invoke the **`self-check` sub-skill** to cross-check the implementation against the plan
+     6. If self-check returns FAIL (iterate), fix the findings and re-run self-check. If round 2 also fails, proceed to draft PR per the self-check protocol.
+     7. Only after self-check PASSes (or returns FAIL (draft PR)), commit and push
+  3. **Project rules:** read CLAUDE.md for conventions and the check command
+  4. **Architecture constraints:** ADRs in `docs/adr/` (the plan will list the constraining ones)
+  5. **Branch naming:** `feature/{issue-number}-{short-description}` (or `fix/{issue-number}-...` for bugs based on the `type:` label)
+  6. **Commit message:** reference the issue number (e.g., "Implement seeded RNG system (#8)")
+  7. **Commit the plan documents:** both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` must be committed as part of the implementation PR per workflow contract §8.3
 
 Read the project's CLAUDE.md to discover the exact check command (commonly `npm run check`, `cargo check`, `pytest`, etc.). Pass it to the agent as the required pre-completion gate.
+
+**Sub-skill invocation by the coding agent.** The three sub-skills (`plan-task`, `self-check`, and optionally re-running `prepare-context` for additional gathering) are installed as part of this plugin and discoverable via the agent's skill system. The orchestrator's prompt must explicitly instruct the agent to invoke them by name at the specified phases — do not assume the agent will discover them on its own.
 
 If tasks are independent, spawn multiple agents in a **single message** (parallel tool calls).
 
@@ -99,8 +110,11 @@ If tasks are sequential (one depends on the other), spawn them one at a time, wa
 
 After each agent completes and returns its worktree branch:
 
-1. Push the branch to origin
-2. Create a PR via `gh pr create` with:
+1. Check the self-check disposition the agent reported back:
+   - **PASS** → normal PR
+   - **FAIL (draft PR)** → the agent has already opened a draft PR with findings in the body (per the `self-check` protocol). The orchestrator does NOT re-open it; it only needs to post the `@claude` review comment below and surface the draft status to the user in Step 6.
+2. Push the branch to origin (if not already pushed by the agent)
+3. Create a PR via `gh pr create` with (for PASS case only):
    - Title referencing the issue: e.g., "Implement seeded RNG system (#8)"
    - Body with summary, test plan, and closing keyword: `Closes #8`
    - Labels matching the issue's priority and type labels
@@ -141,7 +155,7 @@ Report findings in clearly labeled sections.'
 After all agents complete and PRs are created, present a summary:
 
 - Which issues were worked on
-- PR links for each
+- PR links for each, **marked `[DRAFT]` if self-check ended in FAIL after 2 rounds** — include the unresolved findings inline so the user can triage without opening the PR
 - Any issues that were skipped (blocked, unclear requirements)
 - What the next unblocked tasks will be after these merge
 
@@ -154,4 +168,6 @@ After all agents complete and PRs are created, present a summary:
 - **Update issue status automatically.** The PR's `Closes #N` will auto-close the issue on merge. No manual status update needed.
 - **If a task requires design decisions not covered by the PRD or ADRs**, don't guess. Report it to the user and suggest running `/plan-feature` (when available) or a design discussion first.
 - **Agents must run the check command before considering their work done.** Read CLAUDE.md to find it.
+- **Agents must invoke `plan-task` before writing code and `self-check` before committing.** These are not optional. A coding-agent run that skips either is a contract violation — the orchestrator's agent prompt must name both sub-skills explicitly and state the order.
+- **Plan documents are committed, not gitignored.** Per workflow contract §8.3, both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` ship with the implementation PR.
 - **Contract non-conformance is a hard stop.** If issues in the repo don't match the workflow contract (missing Depends on section, wrong label names, milestones not matching `^M\d+$`), stop and report — don't silently pick alternate parsing.

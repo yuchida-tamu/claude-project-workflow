@@ -41,7 +41,7 @@ Then invoke:
 
 ## Workflow contract
 
-Every file and issue produced by this skill conforms to [`docs/WORKFLOW_CONTRACT.md`](../docs/WORKFLOW_CONTRACT.md) (contract version 1). Issue bodies follow the fixed `## Summary` / `## Acceptance Criteria` / `## Priority` / `## Depends on` template, labels are exactly `P0`–`P3` and `type:feature|bug|chore|docs`, and milestones are named `M1`, `M2`, `M3`. `exec-tasks` reads the same contract, so the two plugins hand off cleanly.
+Every file and issue produced by this skill conforms to [`docs/WORKFLOW_CONTRACT.md`](../docs/WORKFLOW_CONTRACT.md) (contract version 2). Issue bodies follow the fixed `## Summary` / `## Acceptance Criteria` / `## Priority` / `## Depends on` template, labels are exactly `P0`–`P3` and `type:feature|bug|chore|docs`, and milestones are named `M1`, `M2`, `M3`. `exec-tasks` reads the same contract, so the two plugins hand off cleanly.
 
 ## Pairing with exec-tasks
 

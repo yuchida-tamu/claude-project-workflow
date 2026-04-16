@@ -22,7 +22,7 @@ Then invoke with `/exec-tasks` from inside any repo that conforms to the workflo
 
 ## Workflow contract
 
-This skill only works on repositories that conform to [`docs/WORKFLOW_CONTRACT.md`](../docs/WORKFLOW_CONTRACT.md) (contract version 1). The contract specifies the issue body template, label vocabulary (`P0`–`P3`, `type:...`), milestone naming (`M1`, `M2`, …), dependency syntax (`Depends on: #N`), and required project documentation paths.
+This skill only works on repositories that conform to [`docs/WORKFLOW_CONTRACT.md`](../docs/WORKFLOW_CONTRACT.md) (contract version 2). The contract specifies the issue body template, label vocabulary (`P0`–`P3`, `type:...`), milestone naming (`M1`, `M2`, …), dependency syntax (`Depends on: #N`), and required project documentation paths.
 
 Projects scaffolded by `init-project` conform to the contract automatically. For existing repos, either migrate them to the contract format or use a different tool — `exec-tasks` will stop and report if it encounters non-conforming issues rather than guessing.
 
