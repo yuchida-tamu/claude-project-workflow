@@ -1,0 +1,8 @@
+{
+  "name": "exec-tasks",
+  "version": "0.1.0",
+  "description": "Review GitHub project issues, select unblocked high-priority tasks, spawn coding agents in parallel where possible, and create PRs that trigger automated code review.",
+  "author": {
+    "name": "Yuta Uchida"
+  }
+}

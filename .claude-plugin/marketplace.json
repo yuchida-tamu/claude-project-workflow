@@ -1,0 +1,37 @@
+{
+  "name": "claude-project-workflow",
+  "owner": {
+    "name": "Yuta Uchida"
+  },
+  "metadata": {
+    "description": "Design → plan → execute → review workflow plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "init-project",
+      "source": "./init-project",
+      "version": "0.1.0",
+      "description": "Interview-driven project scaffolder. Creates file layout, git repo, GitHub repo, labels, milestones, and seed issues that exec-tasks can pick up on day one.",
+      "author": {
+        "name": "Yuta Uchida"
+      },
+      "repository": "https://github.com/yuchida-tamu/claude-project-workflow",
+      "license": "MIT",
+      "keywords": ["scaffold", "project", "init", "bootstrap", "interview"],
+      "strict": true
+    },
+    {
+      "name": "exec-tasks",
+      "source": "./exec-tasks",
+      "version": "0.1.0",
+      "description": "Review GitHub project issues, select unblocked high-priority tasks, spawn coding agents in parallel where possible, and create PRs that trigger automated code review.",
+      "author": {
+        "name": "Yuta Uchida"
+      },
+      "repository": "https://github.com/yuchida-tamu/claude-project-workflow",
+      "license": "MIT",
+      "keywords": ["github", "tasks", "orchestration", "agents", "pull-requests"],
+      "strict": true
+    }
+  ]
+}

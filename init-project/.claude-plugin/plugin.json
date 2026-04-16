@@ -1,0 +1,8 @@
+{
+  "name": "init-project",
+  "version": "0.1.0",
+  "description": "Scaffold a new project that conforms to the claude-project-workflow contract: interview the user, write CLAUDE.md/PRD/ADR/glossary, create the GitHub repo with labels, milestones, and seeded M1 issues.",
+  "author": {
+    "name": "Yuta Uchida"
+  }
+}
