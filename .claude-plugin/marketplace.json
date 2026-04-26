@@ -32,6 +32,19 @@
       "license": "MIT",
       "keywords": ["github", "tasks", "orchestration", "agents", "pull-requests"],
       "strict": true
+    },
+    {
+      "name": "post-session",
+      "source": "./post-session",
+      "version": "0.1.0",
+      "description": "Wrap up a session by extracting durable findings (gotchas, runbooks, preferences, repeated patterns), classifying each (new skill / skill update / memory / discard), and writing the skill-worthy ones to disk after a confirmation gate.",
+      "author": {
+        "name": "Yuta Uchida"
+      },
+      "repository": "https://github.com/yuchida-tamu/claude-project-workflow",
+      "license": "MIT",
+      "keywords": ["session", "retrospective", "skills", "memory", "knowledge-capture"],
+      "strict": true
     }
   ]
 }
