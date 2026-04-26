@@ -150,6 +150,14 @@ In addition to standard code-level review (correctness, style, bugs, security), 
 Report findings in clearly labeled sections.'
 ```
 
+4. **Schedule a wakeup to triage review feedback.** The `claude.yml` GitHub Action takes a few minutes to post its review. Don't wait synchronously and don't ask the user to ping you back — schedule a return visit via `ScheduleWakeup` so the review can be triaged in the same session.
+
+   - **Delay:** 240–270 seconds (~4 min). Long enough for the action to post its review in the typical case, while staying inside the 5-min prompt-cache TTL so the wakeup is cheap. Don't pick 300s — that's the worst-of-both (cache miss without amortizing it). If the review hasn't landed on wake-up, schedule one more 240s wakeup; don't busy-poll.
+   - **Reason field:** be specific — e.g. `"checking PR #N for @claude review feedback"`.
+   - **Prompt field:** pass back enough context for cold-start. The wakeup may reload the conversation lossily, so write the prompt as if context were missing. Example: `"Check PR #101 (https://github.com/<owner>/<repo>/pull/101) for the @claude review comment via 'gh pr view 101 --comments'. If the review has posted, summarize findings to the user and propose follow-ups. If it hasn't posted yet, schedule another 240s wakeup."`
+   - **Multiple PRs in one run:** schedule a single wakeup that triages all of them in one pass (`gh pr view <num> --comments` for each), not one wakeup per PR.
+   - **Skip the wakeup** only if the user has explicitly said they'll handle review themselves.
+
 ### Step 6: Report to user
 
 After all agents complete and PRs are created, present a summary:
@@ -170,4 +178,5 @@ After all agents complete and PRs are created, present a summary:
 - **Agents must run the check command before considering their work done.** Read CLAUDE.md to find it.
 - **Agents must invoke `plan-task` before writing code and `self-check` before committing.** These are not optional. A coding-agent run that skips either is a contract violation — the orchestrator's agent prompt must name both sub-skills explicitly and state the order.
 - **Plan documents are committed, not gitignored.** Per workflow contract §8.3, both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` ship with the implementation PR.
+- **Always schedule a wakeup after triggering `@claude` review.** A PR with a pending automated review is not "done" — the review feedback needs triage in the same session. Use `ScheduleWakeup` with a 240–270s delay (see Step 5.4) so the review can be acted on without the user having to ping back. Skip only if the user explicitly takes review on themselves.
 - **Contract non-conformance is a hard stop.** If issues in the repo don't match the workflow contract (missing Depends on section, wrong label names, milestones not matching `^M\d+$`), stop and report — don't silently pick alternate parsing.
