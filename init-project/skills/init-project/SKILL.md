@@ -390,49 +390,9 @@ Empty file to preserve the directory.
 
 ### `.github/workflows/claude.yml`
 
-Write this file verbatim. This matches the workflow that Claude Code's `/install-github-app` slash command produces, so a user who later runs `/install-github-app` against the scaffolded repo will not be prompted to overwrite this file.
+Copy verbatim from the bundled template at [`templates/claude.yml`](./templates/claude.yml) (relative to this SKILL.md). Do not regenerate or paraphrase the YAML — read the file and write it byte-for-byte to `.github/workflows/claude.yml` in the scaffolded repo.
 
-```yaml
-name: Claude Code
-
-on:
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  issues:
-    types: [opened, assigned]
-  pull_request_review:
-    types: [submitted]
-
-jobs:
-  claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
-      actions: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Run Claude Code
-        id: claude
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          additional_permissions: |
-            actions: read
-```
+This matches the workflow that Claude Code's `/install-github-app` slash command produces, so a user who later runs `/install-github-app` against the scaffolded repo will not be prompted to overwrite this file. If the template ever needs to drift from `/install-github-app`'s output, edit `templates/claude.yml` (single source of truth) — never re-inline the YAML in this SKILL.md.
 
 Authentication uses `CLAUDE_CODE_OAUTH_TOKEN` (a Claude.ai OAuth token), not `ANTHROPIC_API_KEY`. The token is set up by `/install-github-app` as part of the GitHub App installation flow — see "Successful completion" below.
 
