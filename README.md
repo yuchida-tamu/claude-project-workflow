@@ -15,6 +15,7 @@ Then install the plugins you need:
 ```
 /plugin install init-project@claude-project-workflow
 /plugin install exec-tasks@claude-project-workflow
+/plugin install post-session@claude-project-workflow
 ```
 
 ## The four-skill workflow
@@ -32,6 +33,14 @@ This marketplace is organized around four phases of project development. Each ph
 **Currently planned (not yet built):** `plan-feature`, `review-impl`.
 
 The two implemented skills share a **workflow contract** — a shared definition of how issues, labels, milestones, and project docs are structured — documented in [`docs/WORKFLOW_CONTRACT.md`](./docs/WORKFLOW_CONTRACT.md). The contract is the reason these skills live in the same repo: they evolve in lockstep.
+
+### Cross-cutting skills
+
+Beyond the four phases, the marketplace also ships skills that apply at any phase:
+
+| Skill | Command | What it does |
+|---|---|---|
+| `post-session` | `/post-session` | Surveys the current session for durable findings (gotchas, runbooks, preferences, repeated patterns), classifies each as new skill / skill update / memory / discard, and — after a confirmation gate — writes the skill-worthy ones to `.claude/skills/` and memory entries to the auto-memory directory. Use it at the end of any non-trivial session to compound knowledge for the next one. |
 
 ## Plugins
 
@@ -51,6 +60,14 @@ Task orchestrator. Reviews a GitHub project board, selects unblocked high-priori
 /plugin install exec-tasks@claude-project-workflow
 ```
 
+### [post-session](./post-session/)
+
+Session-wrap-up skill. Surveys the current session for durable findings — friction we worked through, runbooks we discovered, preferences the user stated, patterns we repeated — classifies each as new skill / skill update / memory entry / discard, and writes the skill-worthy ones to disk after a confirmation gate. Cross-cutting: pairs naturally with `exec-tasks` at the end of a PR batch.
+
+```
+/plugin install post-session@claude-project-workflow
+```
+
 ## Typical workflow
 
 ```
@@ -58,6 +75,7 @@ mkdir ~/Projects/my-new-app && cd ~/Projects/my-new-app
 /init-project                  # interview + scaffold + GitHub repo + seeded M1 issues
 /exec-tasks                    # pick up M1 issues, spawn agents, open PRs
 # ... review and merge PRs ...
+/post-session                  # capture lessons learned so the next batch is faster
 /exec-tasks                    # continue with next unblocked M1 issues
 # ... M1 ships ...
 /plan-feature                  # (when implemented) design next feature for M2
@@ -96,6 +114,7 @@ Claude Code にマーケットプレイスを追加：
 ```
 /plugin install init-project@claude-project-workflow
 /plugin install exec-tasks@claude-project-workflow
+/plugin install post-session@claude-project-workflow
 ```
 
 ## 4 スキルワークフロー
@@ -113,6 +132,14 @@ Claude Code にマーケットプレイスを追加：
 **計画中（未実装）：** `plan-feature`, `review-impl`
 
 実装済みの 2 スキルは **ワークフロー契約** を共有しています — イシュー、ラベル、マイルストーン、プロジェクトドキュメントの構造に関する共有定義で、[`docs/WORKFLOW_CONTRACT.md`](./docs/WORKFLOW_CONTRACT.md) にまとめられています。この契約こそが、これらのスキルを同じリポジトリに置いている理由です：ロックステップで進化させる必要があるためです。
+
+### フェーズ横断スキル
+
+4 フェーズに加えて、どのフェーズでも使えるスキルも提供しています：
+
+| スキル | コマンド | 機能 |
+|---|---|---|
+| `post-session` | `/post-session` | 現在のセッションを走査して持続的な学び（ハマりどころ、手順書、好み、繰り返しパターン）を抽出し、新規スキル / スキル更新 / メモリ / 破棄 に分類して、確認ゲート後にスキル化すべきものを `.claude/skills/` および auto-memory ディレクトリへ書き込みます。非自明なセッションの終わりに使用して、次のセッションの効率を高めます。 |
 
 ## プラグイン
 
@@ -132,6 +159,14 @@ Claude Code にマーケットプレイスを追加：
 /plugin install exec-tasks@claude-project-workflow
 ```
 
+### [post-session](./post-session/)
+
+セッション振り返りスキル。現在のセッションを走査して持続的な学び — 乗り越えた摩擦、見つけた手順書、ユーザーが述べた好み、繰り返したパターン — を抽出し、新規スキル / スキル更新 / メモリエントリ / 破棄 に分類して、確認ゲート後にスキル化すべきものをディスクに書き込みます。フェーズ横断スキルで、PR バッチの終わりに `exec-tasks` と組み合わせると自然です。
+
+```
+/plugin install post-session@claude-project-workflow
+```
+
 ## 典型的なワークフロー
 
 ```
@@ -139,6 +174,7 @@ mkdir ~/Projects/my-new-app && cd ~/Projects/my-new-app
 /init-project                  # インタビュー + スキャフォールド + GitHub リポジトリ + 初期 M1 イシュー
 /exec-tasks                    # M1 イシューを拾い、エージェントを起動し、PR を開く
 # ... PR をレビューしてマージ ...
+/post-session                  # 学びを取り込み、次のバッチを高速化
 /exec-tasks                    # 次のブロックされていない M1 イシューを続ける
 # ... M1 リリース ...
 /plan-feature                  # （実装されたら）M2 の次の機能を設計

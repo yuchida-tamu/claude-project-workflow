@@ -1,0 +1,8 @@
+{
+  "name": "post-session",
+  "version": "0.1.0",
+  "description": "Wrap up a working session by surveying it for durable findings (gotchas, runbooks, preferences, repeated patterns), classifying each (new skill / skill update / memory / discard), and writing the skill-worthy ones to disk after a confirmation gate.",
+  "author": {
+    "name": "Yuta Uchida"
+  }
+}
