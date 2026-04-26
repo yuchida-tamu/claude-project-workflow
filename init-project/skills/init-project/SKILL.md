@@ -219,15 +219,21 @@ Delete `.init-project-state.json` and print:
 ✓ Project scaffolded at <path>
 ✓ GitHub repo: https://github.com/<org>/<name>
 
-To enable @claude PR review, run this once:
-  gh secret set ANTHROPIC_API_KEY -R <org>/<name>
+To enable @claude PR review, run this once from inside this repo:
+  /install-github-app
+
+This installs the Claude GitHub App on the repo and configures the
+CLAUDE_CODE_OAUTH_TOKEN secret. The .github/workflows/claude.yml file
+this scaffold wrote is already aligned with what /install-github-app
+expects, so when it asks to overwrite the workflow you can decline
+(or accept — the contents are equivalent).
 
 Next step:
   /plugin install exec-tasks@claude-project-workflow  (if not already installed)
   /exec-tasks    # picks up M1 issues and starts executing
 ```
 
-(If `--skip-github` was set, omit the GitHub line and the `gh secret set` block, and end at the `/exec-tasks` hint.)
+(If `--skip-github` was set, omit the GitHub line and the `/install-github-app` block, and end at the `/exec-tasks` hint.)
 
 ### Step 4: Resume handling
 
@@ -384,7 +390,7 @@ Empty file to preserve the directory.
 
 ### `.github/workflows/claude.yml`
 
-Write this file verbatim:
+Write this file verbatim. This matches the workflow that Claude Code's `/install-github-app` slash command produces, so a user who later runs `/install-github-app` against the scaffolded repo will not be prompted to overwrite this file.
 
 ```yaml
 name: Claude Code
@@ -399,23 +405,36 @@ on:
   pull_request_review:
     types: [submitted]
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  id-token: write
-
 jobs:
   claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - uses: anthropic/claude-code-action@v1
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
 ```
+
+Authentication uses `CLAUDE_CODE_OAUTH_TOKEN` (a Claude.ai OAuth token), not `ANTHROPIC_API_KEY`. The token is set up by `/install-github-app` as part of the GitHub App installation flow — see "Successful completion" below.
 
 ### `.github/workflows/ci.yml`
 
@@ -521,5 +540,5 @@ Written at the start of Phase 1 (see above). Deleted on successful completion of
 - **Offer grill-me only on underspecified answers.** Do not offer it as a default; it is an escape hatch, not a greeting.
 - **Dry-run writes nothing.** `--dry-run` must not touch the filesystem, must not run git, and must not make any `gh` calls. It only prints the plan.
 - **Parallel labels + milestones.** In Phase 4, issue the label creation and milestone creation `gh` calls in a single message with parallel tool calls. Issue creation in Phase 5 is strictly sequential because later issues may reference earlier issue numbers in `Depends on`.
-- **Print the `gh secret set ANTHROPIC_API_KEY` command at the end.** Do not run it yourself — the user must execute it themselves so the secret stays out of the session log.
+- **Tell the user to run `/install-github-app` at the end.** Do not attempt to install the GitHub App or set the OAuth secret yourself — `/install-github-app` is interactive (OAuth flow) and the user must run it. The scaffold's `claude.yml` is intentionally identical to what `/install-github-app` produces so the user can decline the overwrite prompt.
 - **Final next-step hint points at `/exec-tasks`.** The two plugins are designed to hand off; always tell the user what comes next.
