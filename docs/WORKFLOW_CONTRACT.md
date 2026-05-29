@@ -1,6 +1,6 @@
 # Workflow Contract
 
-**Contract version: 2**
+**Contract version: 3**
 
 This document defines the shared contract between `init-project` (which creates GitHub issues, labels, milestones, and project documentation) and `exec-tasks` (which reads them to select and execute work). Both plugins MUST conform to the current contract version.
 
@@ -164,9 +164,36 @@ Sections with no data MUST contain the literal string "None" — not placeholder
 
 Both `.memory/plans/<issue>-context.md` and `.memory/plans/<issue>-plan.md` are committed as part of the implementation PR. They are not gitignored. `review-impl` (future skill) reads them during retrospective, and human reviewers use them to understand the agent's intent.
 
+## 9. Workflow settings
+
+`init-project` writes a `## Workflow settings` section at the bottom of every generated `CLAUDE.md`. `exec-tasks` reads this section to drive runtime behavior.
+
+### 9.1 Location
+
+In the scaffolded project's `CLAUDE.md`:
+
+```markdown
+## Workflow settings
+
+- **Auto-merge:** off
+```
+
+Valid values for `Auto-merge` are `on` and `off` (case-insensitive). If the section is absent, `exec-tasks` treats it as `off`.
+
+### 9.2 Auto-merge behavior
+
+When `Auto-merge` is `on`, `exec-tasks` automatically merges a PR after the `@claude` review has been posted, provided the review contains no blocking findings. A review is considered blocking if it contains the marker `[BLOCKING]` anywhere in the comment body. This marker is defined in the `@claude` review prompt that `exec-tasks` posts (Step 5 of `exec-tasks/skills/exec-tasks/SKILL.md`), which instructs the reviewer to prefix every must-fix finding with `**[BLOCKING]**`. A review with only `[SUGGESTION]` items or no findings at all is safe to auto-merge.
+
+When `Auto-merge` is `off` (default), `exec-tasks` surfaces the review to the user and waits for a manual merge decision.
+
+### 9.3 Toggling after initialization
+
+Run `/auto-merge on` or `/auto-merge off` in a project repository to update the `CLAUDE.md` setting without re-running `init-project`. Running `/auto-merge` with no argument toggles the current value.
+
 ---
 
 ## Changelog
 
+- **v3 (2026-05-30):** Added §9 Workflow settings. Documents the `## Workflow settings` section in `CLAUDE.md`, the `Auto-merge` key, blocking-findings heuristic, and the `/auto-merge` toggle command. No breaking changes to §1–§8.
 - **v2 (2026-04-16):** Added §8 Plan documents. Specifies location (`.memory/plans/<issue>-context.md` and `<issue>-plan.md`), required sections, validation rules enforced by `self-check`, and commit policy. No breaking changes to §1–§7.
 - **v1 (2026-04-16):** Initial contract. Established issue template, label vocabulary, milestone naming, dependency syntax, priority ordering, documentation paths, and `.memory/` structure.

@@ -15,7 +15,7 @@ Review the GitHub project board of the current repository, identify the highest-
 
 ## Workflow Contract
 
-This skill reads issues, labels, and milestones according to the shared workflow contract at [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) in the `claude-project-workflow` repo (contract version 2). Projects scaffolded by `init-project` conform to this contract automatically.
+This skill reads issues, labels, and milestones according to the shared workflow contract at [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) in the `claude-project-workflow` repo (contract version 3). Projects scaffolded by `init-project` conform to this contract automatically.
 
 **Key contract points this skill relies on:**
 - **Issue body template** has `## Summary`, `## Acceptance Criteria`, `## Priority`, `## Depends on` sections
@@ -59,7 +59,7 @@ Apply these rules in order (per the workflow contract):
    - Neither depends on the other
    - They don't modify the same files (infer from issue bodies and acceptance criteria)
    - Both are unblocked
-5. **Cap concurrency.** Run at most 3 agents in parallel.
+5. **Cap concurrency.** Run at most 3 agents in parallel. If an agent returns a rate-limit error, reduce concurrency to 2 and retry — do not abort the run.
 
 ### Step 3: Gather context for each task
 
@@ -82,6 +82,18 @@ Do not duplicate context-gathering work inline here — delegate to the sub-skil
 For each selected task, spawn an Agent with:
 - `subagent_type: "expert-programmer"`
 - `isolation: "worktree"` (each agent works on an isolated copy)
+- **`model`:** chosen by the orchestrator based on task complexity (see model selection table below). Never use an Opus model for execution agents — Opus is reserved for planning review via the GitHub Action.
+
+**Model selection table:**
+
+| Condition | Model |
+|---|---|
+| `type:chore` or `type:docs`, any priority | `claude-haiku-4-5` |
+| `type:feature` or `type:bug`, P2 or P3 | `claude-sonnet-4-6` |
+| `type:feature` or `type:bug`, P0 or P1 | `claude-sonnet-4-6` |
+
+Sonnet is the ceiling for execution agents. The extra reasoning capacity that Opus provides is covered by the `plan-task` phase (which runs inside the agent) and the `@claude` PR review (which runs on Opus via the GitHub Action).
+
 - A comprehensive prompt that includes:
   1. **The task:** issue number, issue title, and a pointer to `.memory/plans/<N>-context.md` (produced in Step 3) as the primary context input
   2. **Required workflow for the coding agent** (the agent MUST follow this order):
@@ -94,9 +106,10 @@ For each selected task, spawn an Agent with:
      7. Only after self-check PASSes (or returns FAIL (draft PR)), commit and push
   3. **Project rules:** read CLAUDE.md for conventions and the check command
   4. **Architecture constraints:** ADRs in `docs/adr/` (the plan will list the constraining ones)
-  5. **Branch naming:** `feature/{issue-number}-{short-description}` (or `fix/{issue-number}-...` for bugs based on the `type:` label)
-  6. **Commit message:** reference the issue number (e.g., "Implement seeded RNG system (#8)")
-  7. **Commit the plan documents:** both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` must be committed as part of the implementation PR per workflow contract §8.3
+  5. **Reasoning depth:** For issues labelled `P0` or whose plan's Constraints section lists one or more ADRs, instruct the agent to spend extra time in the planning phase before writing any code — these are the tasks where a poor plan causes the most downstream rework.
+  6. **Branch naming:** `feature/{issue-number}-{short-description}` (or `fix/{issue-number}-...` for bugs based on the `type:` label)
+  7. **Commit message:** reference the issue number (e.g., "Implement seeded RNG system (#8)")
+  8. **Commit the plan documents:** both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` must be committed as part of the implementation PR per workflow contract §8.3
 
 Read the project's CLAUDE.md to discover the exact check command (commonly `npm run check`, `cargo check`, `pytest`, etc.). Pass it to the agent as the required pre-completion gate.
 
@@ -147,14 +160,14 @@ In addition to standard code-level review (correctness, style, bugs, security), 
 4. **Documentation completeness** — Flag if new ADRs, feature docs, glossary updates, or CLAUDE.md changes are needed.
 5. **Convention compliance** — Read CLAUDE.md and verify the project conventions are followed.
 
-Report findings in clearly labeled sections.'
+Report findings in clearly labeled sections. For each finding that must be resolved before this PR can merge, begin the line with **[BLOCKING]**. For suggestions or non-critical observations, begin with **[SUGGESTION]**. A PR with no [BLOCKING] findings is safe to merge.'
 ```
 
 4. **Schedule a wakeup to triage review feedback.** The `claude.yml` GitHub Action takes a few minutes to post its review. Don't wait synchronously and don't ask the user to ping you back — schedule a return visit via `ScheduleWakeup` so the review can be triaged in the same session.
 
    - **Delay:** 240–270 seconds (~4 min). Long enough for the action to post its review in the typical case, while staying inside the 5-min prompt-cache TTL so the wakeup is cheap. Don't pick 300s — that's the worst-of-both (cache miss without amortizing it). If the review hasn't landed on wake-up, schedule one more 240s wakeup; don't busy-poll.
    - **Reason field:** be specific — e.g. `"checking PR #N for @claude review feedback"`.
-   - **Prompt field:** pass back enough context for cold-start. The wakeup may reload the conversation lossily, so write the prompt as if context were missing. Example: `"Check PR #101 (https://github.com/<owner>/<repo>/pull/101) for the @claude review comment via 'gh pr view 101 --comments'. If the review has posted, summarize findings to the user and propose follow-ups. If it hasn't posted yet, schedule another 240s wakeup."`
+   - **Prompt field:** pass back enough context for cold-start. The wakeup may reload the conversation lossily, so write the prompt as if context were missing. Example: `"Check PR #101 (https://github.com/<owner>/<repo>/pull/101) for the @claude review comment via 'gh pr view 101 --comments'. Read CLAUDE.md and check the 'Auto-merge:' value under '## Workflow settings'. If the review has posted: (a) if Auto-merge is 'on' and the review contains no [BLOCKING] markers, merge immediately with 'gh pr merge 101 --repo <owner>/<repo> --squash --delete-branch' and report to the user; (b) otherwise, summarize findings to the user and propose follow-ups. If the review hasn't posted yet, schedule another 240s wakeup."`
    - **Multiple PRs in one run:** schedule a single wakeup that triages all of them in one pass (`gh pr view <num> --comments` for each), not one wakeup per PR.
    - **Skip the wakeup** only if the user has explicitly said they'll handle review themselves.
 
@@ -180,3 +193,4 @@ After all agents complete and PRs are created, present a summary:
 - **Plan documents are committed, not gitignored.** Per workflow contract §8.3, both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` ship with the implementation PR.
 - **Always schedule a wakeup after triggering `@claude` review.** A PR with a pending automated review is not "done" — the review feedback needs triage in the same session. Use `ScheduleWakeup` with a 240–270s delay (see Step 5.4) so the review can be acted on without the user having to ping back. Skip only if the user explicitly takes review on themselves.
 - **Contract non-conformance is a hard stop.** If issues in the repo don't match the workflow contract (missing Depends on section, wrong label names, milestones not matching `^M\d+$`), stop and report — don't silently pick alternate parsing.
+- **Never spawn an Opus execution agent.** Opus is reserved for the `@claude` PR review step (GitHub Action). Execution agents use `claude-sonnet-4-6` or `claude-haiku-4-5` based on task type and priority — see the model selection table in Step 4.

@@ -10,8 +10,8 @@
     {
       "name": "init-project",
       "source": "./init-project",
-      "version": "0.1.0",
-      "description": "Interview-driven project scaffolder. Creates file layout, git repo, GitHub repo, labels, milestones, and seed issues that exec-tasks can pick up on day one.",
+      "version": "0.2.0",
+      "description": "Interview-driven project scaffolder. Creates file layout, git repo, GitHub repo, labels, milestones, and seed issues that exec-tasks can pick up on day one. Pass --auto-merge to enable automatic PR merging from day one.",
       "author": {
         "name": "Yuta Uchida"
       },
@@ -23,8 +23,8 @@
     {
       "name": "exec-tasks",
       "source": "./exec-tasks",
-      "version": "0.1.0",
-      "description": "Review GitHub project issues, select unblocked high-priority tasks, spawn coding agents in parallel where possible, and create PRs that trigger automated code review.",
+      "version": "0.2.0",
+      "description": "Review GitHub project issues, select model-appropriate coding agents (Haiku for chore/docs, Sonnet for feature/bug), and create PRs that trigger Opus-powered @claude review. Supports opt-in auto-merge.",
       "author": {
         "name": "Yuta Uchida"
       },

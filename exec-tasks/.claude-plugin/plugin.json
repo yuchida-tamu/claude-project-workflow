@@ -1,7 +1,7 @@
 {
   "name": "exec-tasks",
-  "version": "0.1.0",
-  "description": "Review GitHub project issues, select unblocked high-priority tasks, spawn coding agents in parallel where possible, and create PRs that trigger automated code review.",
+  "version": "0.2.0",
+  "description": "Review GitHub project issues, select unblocked high-priority tasks, spawn model-appropriate coding agents (Haiku for chore/docs, Sonnet for feature/bug), and create PRs that trigger automated Opus-powered code review. Supports opt-in auto-merge via /auto-merge.",
   "author": {
     "name": "Yuta Uchida"
   }

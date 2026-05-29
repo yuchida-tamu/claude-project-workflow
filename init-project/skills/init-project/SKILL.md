@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Project Initializer
 
-Bootstrap a new project that conforms to the [workflow contract](../../../docs/WORKFLOW_CONTRACT.md) (contract version 2). The output of this skill is a local scaffold plus a GitHub repository whose issues, labels, and milestones match exactly what `exec-tasks` expects to read.
+Bootstrap a new project that conforms to the [workflow contract](../../../docs/WORKFLOW_CONTRACT.md) (contract version 3). The output of this skill is a local scaffold plus a GitHub repository whose issues, labels, and milestones match exactly what `exec-tasks` expects to read.
 
 ## When to use
 
@@ -15,7 +15,7 @@ Bootstrap a new project that conforms to the [workflow contract](../../../docs/W
 
 ## Workflow Contract
 
-Every artifact this skill writes MUST conform to [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) (contract version 2). The load-bearing points:
+Every artifact this skill writes MUST conform to [`docs/WORKFLOW_CONTRACT.md`](../../../docs/WORKFLOW_CONTRACT.md) (contract version 3). The load-bearing points:
 
 - **Issue body template** has exactly `## Summary`, `## Acceptance Criteria`, `## Priority`, `## Depends on` sections (in that order)
 - **Priority labels:** `P0`, `P1`, `P2`, `P3` (exactly one per issue)
@@ -40,12 +40,13 @@ Any deviation from these names, formats, or paths is a contract violation. Do no
   - `--resume` — read `.init-project-state.json` and continue from the first incomplete phase
   - `--name=<name>` — with `--resume`, allow overriding the target repo name (e.g., after a name collision on `gh repo create`)
   - `--license=mit|apache-2.0|none` — default `mit`
+  - `--auto-merge` — enable auto-merge in the generated `CLAUDE.md`. Equivalent to answering "yes" to Q14. Default: off.
 
 ## Workflow
 
 ### Step 1: Interview
 
-Ask these 13 questions **one at a time**, inline. Do not dump them all at once. Keep follow-ups short and only when an answer is ambiguous. If the user passes a `name` arg, skip Q1.
+Ask these 14 questions **one at a time**, inline. Do not dump them all at once. Keep follow-ups short and only when an answer is ambiguous. If the user passes a `name` arg, skip Q1. If `--auto-merge` flag was passed, skip Q14 and treat the answer as "yes".
 
 1. **Project name** (skip if passed as arg)
 2. **One-sentence pitch:** what does it do and for whom?
@@ -60,6 +61,7 @@ Ask these 13 questions **one at a time**, inline. Do not dump them all at once. 
 11. **Domain vocabulary:** 3–5 key nouns that need glossary entries. For each: term and short definition.
 12. **Any repo-specific conventions beyond the five principles?** (e.g., "no barrel exports", "type over interface", "semantic keys"). Free-form, optional.
 13. **GitHub org/user and visibility.** Default org/user: `gh api user --jq .login`. Visibility: public or private.
+14. **Auto-merge.** Should `exec-tasks` automatically merge PRs once the `@claude` review passes with no blocking findings? With auto-merge **off** (default), you decide when to merge. With auto-merge **on**, merges happen without prompting. (yes / no)
 
 #### grill-me escape hatch
 
@@ -123,11 +125,11 @@ Before writing anything else, write `.init-project-state.json` at the project ro
 
 ```json
 {
-  "contract_version": 1,
+  "contract_version": 3,
   "target_name": "<name>",
   "target_org": "<org>",
   "visibility": "<public|private>",
-  "flags": { "skip_github": false, "no_hook": false, "license": "mit" },
+  "flags": { "skip_github": false, "no_hook": false, "license": "mit", "auto_merge": false },
   "answers": { "q1": "...", "q2": "...", "...": "..." },
   "completed_phases": []
 }
@@ -309,6 +311,13 @@ After the spine, append these generated sections:
   5. Push branch, create PR via `gh pr create`
   6. Wait for review
   7. On merge, switch to `main`, pull, delete local branch
+- `## Workflow settings` — one line, using the answer from Q14 (or `--auto-merge` flag):
+  ```markdown
+  ## Workflow settings
+
+  - **Auto-merge:** on
+  ```
+  Write `on` if Q14 was "yes" or `--auto-merge` flag was passed; write `off` otherwise.
 
 The `{{CHECK_COMMAND}}` and `{{CHECK_DESCRIPTION}}` substitutions for the Principles spine come from the same tech-stack mapping above. For Node use `npm run check` / "typecheck + lint + test". For Rust use `cargo check && cargo test && cargo clippy` / "check + test + clippy". For Python use `pytest && ruff check && mypy` / "tests + lint + types". For Go use `go build ./... && go test ./... && go vet ./...` / "build + test + vet". For Unknown use `./scripts/check.sh` / "project check".
 

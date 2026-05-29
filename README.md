@@ -46,7 +46,7 @@ Beyond the four phases, the marketplace also ships skills that apply at any phas
 
 ### [init-project](./init-project/)
 
-Interview-driven project scaffolder. Creates the file layout, git repo, GitHub repo, labels, milestones, and seed issues that `exec-tasks` expects — with a single command. Emphasizes the Tidy First principle (separate structural from behavioral changes) in every `CLAUDE.md` it generates.
+Interview-driven project scaffolder. Creates the file layout, git repo, GitHub repo, labels, milestones, and seed issues that `exec-tasks` expects — with a single command. Emphasizes the Tidy First principle in every `CLAUDE.md` it generates. Pass `--auto-merge` to enable automatic PR merging from day one, or answer Q14 during the interview.
 
 ```
 /plugin install init-project@claude-project-workflow
@@ -54,7 +54,7 @@ Interview-driven project scaffolder. Creates the file layout, git repo, GitHub r
 
 ### [exec-tasks](./exec-tasks/)
 
-Task orchestrator. Reviews a GitHub project board, selects unblocked high-priority issues, spawns coding agents in isolated worktrees (parallel when safe), and opens PRs that trigger automated `@claude` code review.
+Task orchestrator. Reviews a GitHub project board, selects unblocked high-priority issues, spawns model-appropriate coding agents in isolated worktrees (parallel when safe), and opens PRs that trigger automated `@claude` code review (pinned to `claude-opus-4-8`). Selects `claude-haiku-4-5` for `type:chore` / `type:docs` tasks and `claude-sonnet-4-6` for `type:feature` / `type:bug` tasks — Opus is reserved for review. Supports opt-in auto-merge via `/auto-merge`.
 
 ```
 /plugin install exec-tasks@claude-project-workflow
@@ -73,6 +73,7 @@ Session-wrap-up skill. Surveys the current session for durable findings — fric
 ```
 mkdir ~/Projects/my-new-app && cd ~/Projects/my-new-app
 /init-project                  # interview + scaffold + GitHub repo + seeded M1 issues
+/auto-merge on                 # (optional) auto-merge PRs after a clean @claude review
 /exec-tasks                    # pick up M1 issues, spawn agents, open PRs
 # ... review and merge PRs ...
 /post-session                  # capture lessons learned so the next batch is faster
@@ -92,8 +93,9 @@ The shared contract between `init-project` and `exec-tasks` is documented in [`d
 - Dependency syntax (`Depends on: #N`)
 - Priority sort order
 - Project documentation paths
+- Workflow settings (`Auto-merge` opt-in — see `/auto-merge`)
 
-Any change that affects the contract requires a version bump and synchronized updates to both plugins.
+Any change that affects the contract requires a version bump and synchronized updates to both plugins. The current contract is **v3**.
 
 ---
 
@@ -145,7 +147,7 @@ Claude Code にマーケットプレイスを追加：
 
 ### [init-project](./init-project/)
 
-インタビュー駆動のプロジェクトスキャフォルダ。`exec-tasks` が期待するファイルレイアウト、git リポジトリ、GitHub リポジトリ、ラベル、マイルストーン、初期イシューを単一のコマンドで作成します。生成するすべての `CLAUDE.md` で Tidy First 原則（構造的変更と振る舞いの変更を分離する）を強調します。
+インタビュー駆動のプロジェクトスキャフォルダ。`exec-tasks` が期待するファイルレイアウト、git リポジトリ、GitHub リポジトリ、ラベル、マイルストーン、初期イシューを単一のコマンドで作成します。生成するすべての `CLAUDE.md` で Tidy First 原則を強調します。`--auto-merge` フラグを渡すと初日から自動マージが有効になります。インタビューの Q14 で後から設定することも可能です。
 
 ```
 /plugin install init-project@claude-project-workflow
@@ -153,7 +155,7 @@ Claude Code にマーケットプレイスを追加：
 
 ### [exec-tasks](./exec-tasks/)
 
-タスクオーケストレーター。GitHub プロジェクトボードをレビューし、ブロックされていない優先イシューを選択し、分離ワークツリーでコーディングエージェントを（安全な場合は並列で）起動し、`@claude` 自動コードレビューをトリガーする PR を開きます。
+タスクオーケストレーター。GitHub プロジェクトボードをレビューし、ブロックされていない優先イシューを選択し、タスクタイプに応じたモデルのコーディングエージェント（`type:chore`/`type:docs` は `claude-haiku-4-5`、`type:feature`/`type:bug` は `claude-sonnet-4-6`）を分離ワークツリーで起動し、`claude-opus-4-8` による `@claude` 自動コードレビューをトリガーする PR を開きます。`/auto-merge` によるオプトイン自動マージをサポートします。
 
 ```
 /plugin install exec-tasks@claude-project-workflow
@@ -172,6 +174,7 @@ Claude Code にマーケットプレイスを追加：
 ```
 mkdir ~/Projects/my-new-app && cd ~/Projects/my-new-app
 /init-project                  # インタビュー + スキャフォールド + GitHub リポジトリ + 初期 M1 イシュー
+/auto-merge on                 # （オプション）@claude レビューが通過したら PR を自動マージ
 /exec-tasks                    # M1 イシューを拾い、エージェントを起動し、PR を開く
 # ... PR をレビューしてマージ ...
 /post-session                  # 学びを取り込み、次のバッチを高速化
@@ -191,5 +194,6 @@ mkdir ~/Projects/my-new-app && cd ~/Projects/my-new-app
 - 依存関係の構文（`Depends on: #N`）
 - 優先度ソート順
 - プロジェクトドキュメントのパス
+- ワークフロー設定（`Auto-merge` オプトイン — `/auto-merge` 参照）
 
-契約に影響する変更はバージョンの更新と両プラグインの同期更新が必要です。
+契約に影響する変更はバージョンの更新と両プラグインの同期更新が必要です。現在の契約は **v3** です。

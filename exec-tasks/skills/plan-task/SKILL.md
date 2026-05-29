@@ -42,6 +42,8 @@ Before filling in the template, think through:
 - **What states exist?** If the feature has distinct states (loading/ready/error, or a domain state machine), this becomes the second diagram. If there are no distinct states, the second diagram is a data model instead.
 - **What could go wrong?** Constraints from ADRs, edge cases from acceptance criteria, dependencies on other unfinished work.
 
+Before filling in any section, think through the full approach end-to-end. Don't commit to a file manifest or diagram until you've traced the change through the codebase mentally. Re-read the context package after thinking if anything you find contradicts your initial framing.
+
 ### Step 3: Write the plan document
 
 Write `.memory/plans/<issue_number>-plan.md` with this exact structure. All sections are mandatory except where marked.
