@@ -25,12 +25,12 @@ This marketplace is organized around four phases of project development. Each ph
 | Phase | Skill | Command | What it does |
 |---|---|---|---|
 | **Design** | `init-project` | `/init-project` | Interviews you about a new project, then scaffolds `CLAUDE.md`, `docs/PRD.md`, `docs/glossary.md`, ADRs, GitHub repo, labels, milestones, and seed issues — ready for `exec-tasks` on day one. |
-| **Plan** | `plan-feature` | `/plan-feature` | *Planned.* Walks you through designing a feature before implementation — produces a phased plan in `.memory/plans/` and opens GitHub issues linked to the plan. |
+| **Plan** | `plan-feature` | `/plan-feature` | Designs a feature before implementation: complexity assessment, structured plan with mermaid diagrams, ADR extraction, GitHub issue creation ready for `exec-tasks`, and post-implementation reference docs via `/doc-feature`. |
 | **Execute** | `exec-tasks` | `/exec-tasks` | Reads the GitHub project board, selects unblocked high-priority issues, spawns coding agents in isolated worktrees (parallel when safe), and opens PRs that trigger automated `@claude` review. |
 | **Review** | `review-impl` | `/review-impl` | *Planned.* Reviews merged implementations against the original plan and PRD, produces a retrospective, and updates project docs. |
 
-**Currently implemented:** `init-project`, `exec-tasks`.
-**Currently planned (not yet built):** `plan-feature`, `review-impl`.
+**Currently implemented:** `init-project`, `plan-feature`, `exec-tasks`.
+**Currently planned (not yet built):** `review-impl`.
 
 The two implemented skills share a **workflow contract** — a shared definition of how issues, labels, milestones, and project docs are structured — documented in [`docs/WORKFLOW_CONTRACT.md`](./docs/WORKFLOW_CONTRACT.md). The contract is the reason these skills live in the same repo: they evolve in lockstep.
 
@@ -126,12 +126,12 @@ Claude Code にマーケットプレイスを追加：
 | フェーズ | スキル | コマンド | 機能 |
 |---|---|---|---|
 | **設計** | `init-project` | `/init-project` | 新しいプロジェクトについてインタビューし、`CLAUDE.md`、`docs/PRD.md`、`docs/glossary.md`、ADR、GitHub リポジトリ、ラベル、マイルストーン、初期イシューを作成します — 初日から `exec-tasks` が使えます。 |
-| **計画** | `plan-feature` | `/plan-feature` | *計画中。* 実装前に機能を設計するためのウォークスルーを提供します。`.memory/plans/` にフェーズ分けされた計画を作成し、計画にリンクした GitHub イシューを開きます。 |
+| **計画** | `plan-feature` | `/plan-feature` | 実装前に機能を設計します：複雑さの評価、ミームダイアグラム付き構造化プラン、ADR 抽出、`exec-tasks` 対応 GitHub イシュー作成、`/doc-feature` による実装後参照ドキュメント生成。 |
 | **実行** | `exec-tasks` | `/exec-tasks` | GitHub プロジェクトボードをレビューし、ブロックされていない優先イシューを選択し、分離ワークツリーでコーディングエージェントを（安全な場合は並列で）起動し、`@claude` 自動レビューをトリガーする PR を開きます。 |
 | **レビュー** | `review-impl` | `/review-impl` | *計画中。* マージされた実装を元の計画と PRD と照らし合わせてレビューし、振り返りを作成してプロジェクトドキュメントを更新します。 |
 
-**現在実装済み：** `init-project`, `exec-tasks`
-**計画中（未実装）：** `plan-feature`, `review-impl`
+**現在実装済み：** `init-project`, `plan-feature`, `exec-tasks`
+**計画中（未実装）：** `review-impl`
 
 実装済みの 2 スキルは **ワークフロー契約** を共有しています — イシュー、ラベル、マイルストーン、プロジェクトドキュメントの構造に関する共有定義で、[`docs/WORKFLOW_CONTRACT.md`](./docs/WORKFLOW_CONTRACT.md) にまとめられています。この契約こそが、これらのスキルを同じリポジトリに置いている理由です：ロックステップで進化させる必要があるためです。
 

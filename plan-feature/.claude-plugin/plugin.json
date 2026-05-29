@@ -1,0 +1,8 @@
+{
+  "name": "plan-feature",
+  "version": "0.1.0",
+  "description": "Design a feature before implementation: interview at the right depth, produce a structured plan with mermaid diagrams, extract ADRs, and convert phases into GitHub issues ready for exec-tasks.",
+  "author": {
+    "name": "Yuta Uchida"
+  }
+}

@@ -34,6 +34,19 @@
       "strict": true
     },
     {
+      "name": "plan-feature",
+      "source": "./plan-feature",
+      "version": "0.1.0",
+      "description": "Design a feature before implementation: complexity assessment, structured plan with mermaid diagrams, ADR extraction, user approval, and GitHub issue creation conforming to the workflow contract — ready for exec-tasks.",
+      "author": {
+        "name": "Yuta Uchida"
+      },
+      "repository": "https://github.com/yuchida-tamu/claude-project-workflow",
+      "license": "MIT",
+      "keywords": ["planning", "feature", "design", "diagrams", "issues"],
+      "strict": true
+    },
+    {
       "name": "post-session",
       "source": "./post-session",
       "version": "0.1.0",

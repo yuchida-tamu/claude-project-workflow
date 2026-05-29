@@ -7,6 +7,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.0] — 2026-05-30
+
+### Added
+
+- **`plan-feature` plugin** — the missing **Plan** phase of the design → plan → execute → review workflow. Ported and refined from a battle-tested skill developed in a production project via `/post-session`.
+  - **`plan-feature` skill** — complexity assessment (with `/grill-me` hook for underspecified features), codebase research, structured plan creation (mermaid diagrams, file manifest, phased tasks), ADR extraction, user approval gate, GitHub issue creation conforming to workflow contract v3 (labels, milestones, `Depends on` links), and close-out via `doc-feature`.
+  - **`doc-feature` skill** — generates `docs/features/{feature-name}.md` from the *actual* implementation after all feature issues are merged. Produces mermaid user-flow and system-flow diagrams, data model, key files table, and design decisions. Callable standalone for existing or refactored features. Output is the canonical reference doc for reviewers and future contributors.
+
+---
+
 ## [0.2.0] — 2026-05-30
 
 ### Added
