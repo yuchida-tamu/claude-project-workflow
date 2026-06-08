@@ -40,13 +40,13 @@ Any deviation from these names, formats, or paths is a contract violation. Do no
   - `--resume` — read `.init-project-state.json` and continue from the first incomplete phase
   - `--name=<name>` — with `--resume`, allow overriding the target repo name (e.g., after a name collision on `gh repo create`)
   - `--license=mit|apache-2.0|none` — default `mit`
-  - `--auto-merge` — enable auto-merge in the generated `CLAUDE.md`. Equivalent to answering "yes" to Q14. Default: off.
+  - `--auto-merge` — enable auto-merge in the generated `CLAUDE.md`. Equivalent to answering "yes" to Q15. Default: off.
 
 ## Workflow
 
 ### Step 1: Interview
 
-Ask these 14 questions **one at a time**, inline. Do not dump them all at once. Keep follow-ups short and only when an answer is ambiguous. If the user passes a `name` arg, skip Q1. If `--auto-merge` flag was passed, skip Q14 and treat the answer as "yes".
+Ask these 15 questions **one at a time**, inline. Do not dump them all at once. Keep follow-ups short and only when an answer is ambiguous. If the user passes a `name` arg, skip Q1. If `--auto-merge` flag was passed, skip Q15 and treat the answer as "yes".
 
 1. **Project name** (skip if passed as arg)
 2. **One-sentence pitch:** what does it do and for whom?
@@ -58,10 +58,11 @@ Ask these 14 questions **one at a time**, inline. Do not dump them all at once. 
 8. **First-year milestones:** M1 (MVP), M2 (polish), M3 (ship) — one line each.
 9. **First 3–5 concrete issues for M1.** For each, ask inline: issue title, 2–3 acceptance criteria bullets, priority (P0–P3), type (`feature`/`bug`/`chore`/`docs`), dependencies (comma-separated issue numbers of earlier issues in this list, or `none`).
 10. **Any hard architectural constraints that should become ADR-0002?** (e.g., "offline-first", "monolith not microservices", "no external deps"). If the user says "none", skip ADR-0002.
-11. **Domain vocabulary:** 3–5 key nouns that need glossary entries. For each: term and short definition.
-12. **Any repo-specific conventions beyond the five principles?** (e.g., "no barrel exports", "type over interface", "semantic keys"). Free-form, optional.
-13. **GitHub org/user and visibility.** Default org/user: `gh api user --jq .login`. Visibility: public or private.
-14. **Auto-merge.** Should `exec-tasks` automatically merge PRs once the `@claude` review passes with no blocking findings? With auto-merge **off** (default), you decide when to merge. With auto-merge **on**, merges happen without prompting. (yes / no)
+11. **Folder structure strategy.** How should source be organized on disk (e.g., "feature folders under `src/`", "`cmd/` + `internal/` + `pkg/`", "flat `src/` with co-located tests")? This becomes ADR-0003 so coding agents never have to invent a layout mid-task. If the user has no preference, say so — a sensible default for the Q4 stack is recorded instead.
+12. **Domain vocabulary:** 3–5 key nouns that need glossary entries. For each: term and short definition.
+13. **Any repo-specific conventions beyond the five principles?** (e.g., "no barrel exports", "type over interface", "semantic keys"). Free-form, optional.
+14. **GitHub org/user and visibility.** Default org/user: `gh api user --jq .login`. Visibility: public or private.
+15. **Auto-merge.** Should `exec-tasks` automatically merge PRs once the `@claude` review passes with no blocking findings? With auto-merge **off** (default), you decide when to merge. With auto-merge **on**, merges happen without prompting. (yes / no)
 
 #### grill-me escape hatch
 
@@ -86,6 +87,7 @@ Here's what I'll create:
   docs/glossary.md
   docs/adr/0001-record-architecture-decisions-in-adrs.md
   docs/adr/0002-<slug>.md           [only if Q10 provided]
+  docs/adr/0003-project-structure.md
   .memory/plans/.gitkeep
   .github/workflows/claude.yml
   .github/workflows/ci.yml
@@ -97,7 +99,8 @@ Here's what I'll create:
 🔍 Key excerpts:
   PRD Overview:    "<one-liner from Q2>"
   ADR-0002:        "<Q10 decision>"   [if present]
-  Glossary terms:  <comma-separated list from Q11>
+  ADR-0003:        "<folder structure decision from Q11, or stack default>"
+  Glossary terms:  <comma-separated list from Q12>
   Issues:          #1 <title>, #2 <title>, ... [from Q9]
 
 📡 GitHub operations:                [omit block if --skip-github]
@@ -233,9 +236,15 @@ expects, so when it asks to overwrite the workflow you can decline
 Next step:
   /plugin install exec-tasks@claude-project-workflow  (if not already installed)
   /exec-tasks    # picks up M1 issues and starts executing
+
+Note: this scaffold ran `git init` during the current session. Claude Code
+detects whether a directory is a git repo at session start, so worktree
+isolation in /exec-tasks won't see the new repo until you restart. Before
+running /exec-tasks, restart Claude Code in this directory. (If you don't,
+/exec-tasks will detect this and offer a slower sequential fallback.)
 ```
 
-(If `--skip-github` was set, omit the GitHub line and the `/install-github-app` block, and end at the `/exec-tasks` hint.)
+(If `--skip-github` was set, omit the GitHub line and the `/install-github-app` block, but keep the `/exec-tasks` hint and the restart note.)
 
 ### Step 4: Resume handling
 
@@ -302,7 +311,7 @@ After the spine, append these generated sections:
   - **Python:** `pytest`, `ruff check`, `mypy`
   - **Go:** `go build ./...`, `go test ./...`, `go vet ./...`
   - **Unknown:** `./scripts/check.sh  # TODO: fill in`
-- `## Conventions` — from Q12 (free-form) plus the universal lines: "Ship through PRs. Never push to main. Record significant decisions in `docs/adr/`."
+- `## Conventions` — from Q13 (free-form) plus the universal lines: "Ship through PRs. Never push to main. Record significant decisions in `docs/adr/`."
 - `## Workflow` — template, exactly 7 steps:
   1. Branch from `main`
   2. Consult `.memory/` and `docs/adr/` for relevant specs
@@ -311,13 +320,13 @@ After the spine, append these generated sections:
   5. Push branch, create PR via `gh pr create`
   6. Wait for review
   7. On merge, switch to `main`, pull, delete local branch
-- `## Workflow settings` — one line, using the answer from Q14 (or `--auto-merge` flag):
+- `## Workflow settings` — one line, using the answer from Q15 (or `--auto-merge` flag):
   ```markdown
   ## Workflow settings
 
   - **Auto-merge:** on
   ```
-  Write `on` if Q14 was "yes" or `--auto-merge` flag was passed; write `off` otherwise.
+  Write `on` if Q15 was "yes" or `--auto-merge` flag was passed; write `off` otherwise.
 
 The `{{CHECK_COMMAND}}` and `{{CHECK_DESCRIPTION}}` substitutions for the Principles spine come from the same tech-stack mapping above. For Node use `npm run check` / "typecheck + lint + test". For Rust use `cargo check && cargo test && cargo clippy` / "check + test + clippy". For Python use `pytest && ruff check && mypy` / "tests + lint + types". For Go use `go build ./... && go test ./... && go vet ./...` / "build + test + vet". For Unknown use `./scripts/check.sh` / "project check".
 
@@ -359,11 +368,11 @@ TODO: describe target user
 ```markdown
 # Glossary
 
-<For each term from Q11:>
+<For each term from Q12:>
 - **<term>** — <definition>
 ```
 
-If Q11 was empty, seed with `TODO: add domain vocabulary`.
+If Q12 was empty, seed with `TODO: add domain vocabulary`.
 
 ### `docs/adr/0001-record-architecture-decisions-in-adrs.md`
 
@@ -392,6 +401,44 @@ We will record architecture decisions here using the ADR format (Markdown Archit
 ### `docs/adr/0002-<slug>.md`
 
 **Only if Q10 was non-empty.** Slug is derived from the decision title, kebab-cased. Same MADR template (Status, Context, Decision, Consequences) with the Q10 answer as the decision.
+
+### `docs/adr/0003-project-structure.md`
+
+**Always written.** This ADR pins the project's folder/directory layout up front so `exec-tasks` coding agents never have to invent one mid-task (inventing a project-wide layout is not a per-issue decision, and doing it ad hoc is what leaks structure edits onto `main`). Standard MADR template:
+
+```markdown
+# 3. Project structure
+
+Date: <YYYY-MM-DD>
+
+## Status
+Accepted
+
+## Context
+Source layout is a project-wide decision. Coding agents executing individual issues must not invent or reshape the directory structure on their own. Recording it here gives every agent a single authority to follow.
+
+## Decision
+<The Q11 answer, written as the chosen layout.> Include a short directory tree sketch, e.g.:
+
+\`\`\`
+src/
+  <feature>/        # one folder per feature
+  ...
+tests/              # or co-located, per the strategy above
+\`\`\`
+
+## Consequences
+- Agents place new files according to this layout instead of guessing.
+- Changes to the layout require a new ADR (supersession), not an ad-hoc edit during feature work.
+```
+
+**Decision content.** Use the Q11 answer verbatim as the layout strategy. If the user deferred (no preference), record a sensible default for the Q4 stack instead and note that it was a default:
+
+- **Node/TypeScript:** `src/` with one folder per feature; tests co-located as `*.test.ts` (or `tests/` if Q4 named a separate test root).
+- **Rust:** `src/` for modules, `tests/` for integration tests, `benches/` if relevant.
+- **Python:** top-level package directory (`<package>/`) plus `tests/`.
+- **Go:** `cmd/` for entrypoints, `internal/` for private packages, `pkg/` for exported libraries.
+- **Unknown:** a flat `src/` with co-located tests, and a `TODO: confirm layout` line in the Decision.
 
 ### `.memory/plans/.gitkeep`
 
@@ -505,7 +552,7 @@ Written at the start of Phase 1 (see above). Deleted on successful completion of
 - **Resume respects completed phases.** Never re-run a phase listed in `completed_phases`. Never re-interview; replay answers from the marker.
 - **Hard-fail preserves state.** On any phase failure, stop immediately, update the marker, and print exact remediation commands + a `--resume` hint. Do not roll back.
 - **Spine is verbatim.** The CLAUDE.md Principles section is copied character-for-character. Only the four placeholders (`PROJECT_NAME`, `ONE_LINE_PITCH`, `CHECK_COMMAND`, `CHECK_DESCRIPTION`) may be substituted.
-- **Interview one question at a time.** Do not batch the 13 questions into a single prompt.
+- **Interview one question at a time.** Do not batch the 15 questions into a single prompt.
 - **Offer grill-me only on underspecified answers.** Do not offer it as a default; it is an escape hatch, not a greeting.
 - **Dry-run writes nothing.** `--dry-run` must not touch the filesystem, must not run git, and must not make any `gh` calls. It only prints the plan.
 - **Parallel labels + milestones.** In Phase 4, issue the label creation and milestone creation `gh` calls in a single message with parallel tool calls. Issue creation in Phase 5 is strictly sequential because later issues may reference earlier issue numbers in `Depends on`.
