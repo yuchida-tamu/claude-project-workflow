@@ -79,7 +79,26 @@ Do not duplicate context-gathering work inline here — delegate to the sub-skil
 
 ### Step 4: Spawn coding agents
 
-For each selected task, spawn an Agent with:
+#### Pre-flight: worktree availability
+
+Worktree isolation requires that Claude Code recognized this directory as a git repo **at session start**. When a project was just scaffolded by `/init-project` in the *same* session, `git init` ran mid-session and the harness has not re-detected it — `isolation: "worktree"` will fail even though `.git/` exists on disk.
+
+Before spawning agents, detect this case. It applies if `.git/` exists but the session began in a non-git directory — most commonly when `/init-project` ran earlier in this same session, or when the first `isolation: "worktree"` spawn errors with a git/worktree error.
+
+```bash
+git rev-parse --is-inside-work-tree 2>/dev/null   # does .git exist on disk?
+```
+
+If worktree isolation is unavailable, do NOT abort. Tell the user:
+
+> This repo's git was initialized after the session started, so worktree isolation isn't available yet. Restart Claude Code in this directory for full parallel worktree execution — or I can proceed now by running agents **sequentially in the main working tree** (one feature branch at a time, no worktree isolation). Restart, or proceed sequentially? (restart / sequential)
+
+- **restart** → stop and let the user restart Claude Code; on the next run worktrees work normally.
+- **sequential** → fall back to in-place execution: process the selected issues **one at a time** (concurrency 1), each on its own `feature/...` / `fix/...` branch in the main working tree, with `isolation` omitted. After each issue's PR is opened, switch back to `main` before creating the next branch. Every other step (`plan-task`, `self-check`, PR creation, the `@claude` trigger, the wakeup) is unchanged.
+
+The sequential fallback trades parallelism for working without a restart. Note in the Step 6 summary when it was used.
+
+When worktree isolation IS available, spawn an Agent for each selected task with:
 - `subagent_type: "expert-programmer"`
 - `isolation: "worktree"` (each agent works on an isolated copy)
 - **`model`:** chosen by the orchestrator based on task complexity (see model selection table below). Never use an Opus model for execution agents — Opus is reserved for planning review via the GitHub Action.
@@ -110,6 +129,10 @@ Sonnet is the ceiling for execution agents. The extra reasoning capacity that Op
   6. **Branch naming:** `feature/{issue-number}-{short-description}` (or `fix/{issue-number}-...` for bugs based on the `type:` label)
   7. **Commit message:** reference the issue number (e.g., "Implement seeded RNG system (#8)")
   8. **Commit the plan documents:** both `.memory/plans/<N>-context.md` and `.memory/plans/<N>-plan.md` must be committed as part of the implementation PR per workflow contract §8.3
+  9. **Scope & branch discipline (hard limits):**
+     - Work only inside your worktree on your `feature/`|`fix/` branch. Never check out, commit to, or push `main`.
+     - Touch only the files your issue requires. Do NOT edit `CLAUDE.md`, `docs/PRD.md`, `docs/glossary.md`, `docs/adr/**`, `docs/WORKFLOW_CONTRACT.md`, or `.github/**` unless the issue's acceptance criteria explicitly name that file. (Committing your two `.memory/plans/<N>-*.md` files is required — that is not a project-meta edit.)
+     - If executing the issue reveals a missing **project-wide** decision the docs don't cover (folder layout, a cross-cutting convention, an architectural choice), STOP. Do not author that decision and do not push it. Record it under `## Open questions` in your plan and return the blocker to the orchestrator.
 
 Read the project's CLAUDE.md to discover the exact check command (commonly `npm run check`, `cargo check`, `pytest`, etc.). Pass it to the agent as the required pre-completion gate.
 
@@ -185,6 +208,8 @@ After all agents complete and PRs are created, present a summary:
 - **Never work on blocked tasks.** If all tasks in the current milestone are blocked, report this to the user and suggest unblocking actions.
 - **Always verify the project's check command passes** before creating a PR. If an agent's work fails checks, diagnose and fix before pushing.
 - **Respect the Development Workflow** in CLAUDE.md: branch → PR → review → merge. Never push to main.
+- **No project-meta edits outside an issue.** Neither the orchestrator nor any coding agent may modify `CLAUDE.md`, `docs/PRD.md`, `docs/glossary.md`, `docs/adr/**`, `docs/WORKFLOW_CONTRACT.md`, or `.github/**` unless an issue's acceptance criteria explicitly require it. Those are project-wide decisions owned by `/init-project` and `/plan-feature`. The orchestrator's only writes are the per-issue `.memory/plans/*` files and PR creation. Do not rely on the harness's auto-approve mode to gate a `git push` — never attempt one against `main`.
+- **Surface project-wide gaps; don't fill them.** If a task can't proceed without a project-wide decision the docs don't cover (e.g., the folder structure is undefined — note that `init-project` now pins this in `docs/adr/0003-project-structure.md`), stop that task and report it to the user, suggesting `/init-project --resume` or `/plan-feature`. Authoring the decision ad hoc and pushing it — especially to `main` — is a contract violation, not a convenience.
 - **Each agent gets one issue.** Don't combine multiple issues into one agent — it makes review harder and risks merge conflicts.
 - **Update issue status automatically.** The PR's `Closes #N` will auto-close the issue on merge. No manual status update needed.
 - **If a task requires design decisions not covered by the PRD or ADRs**, don't guess. Report it to the user and suggest running `/plan-feature` (when available) or a design discussion first.
